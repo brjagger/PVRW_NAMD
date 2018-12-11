@@ -336,6 +336,7 @@ void Sequencer::integrate(int scriptTask) {
     } else {
       // fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
       restoreOldPosVel();
+      doPosVelRewind = 0;
     }
 #endif
       rescaleVelocities(step);
