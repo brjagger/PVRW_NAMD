@@ -455,9 +455,9 @@ void Sequencer::integrate(int scriptTask) {
       if( !doPosVelRewind){
         rattle1(timestep,1);
       }
-      // else{
-      //   rattle1(timestep,0);
-      // }
+      else{
+        rattle1(timestep,0);
+      }
 #endif
       if (doTcl || doColvars)  // include constraint forces
         computeGlobal->saveTotalForces(patch);
