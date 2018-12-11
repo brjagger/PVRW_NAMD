@@ -260,7 +260,6 @@ void Sequencer::integrate(int scriptTask) {
     // declare the flag for checking for request to rewind velocities/positions
     // assume it is 0
     int doPosVelRewind = 0;
-    SubmitReduction *pressureProfileReductionBackup = pressureProfileReduction;
 #endif
 
   if ( scriptTask == SCRIPT_RUN ) {
@@ -328,12 +327,12 @@ void Sequencer::integrate(int scriptTask) {
 
   } // scriptTask == SCRIPT_RUN
 
-    for ( ++step; step <= numberOfSteps; ++step )
-    {
+  for ( ++step; step <= numberOfSteps; ++step )
+  {
 #ifdef CFA_PVRW
-      // fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
-      if (!doPosVelRewind) {
-        saveOldPosVel();
+    // fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
+    if (!doPosVelRewind) {
+      saveOldPosVel();
 #endif
       rescaleVelocities(step);
       tcoupleVelocities(timestep,step);
@@ -397,26 +396,28 @@ void Sequencer::integrate(int scriptTask) {
       if ( adaptTempOn ) doEnergy=1;
 
 #ifdef CFA_PVRW
-      } else {
+    } else {
 		  // fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
 	    restoreOldPosVel();
-      }
-      runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
+      doFullElectrostatics = 1;
+      doNonbonded = 1;
+    }
+    runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
 #else
-      runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
+    runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
 #endif
 
-      rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD
+    rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD
 
-      if ( staleForces || doTcl || doColvars ) {
-        if ( doNonbonded ) saveForce(Results::nbond);
-        if ( doFullElectrostatics ) saveForce(Results::slow);
-      }
+    if ( staleForces || doTcl || doColvars ) {
+      if ( doNonbonded ) saveForce(Results::nbond);
+      if ( doFullElectrostatics ) saveForce(Results::slow);
+    }
 
       // reassignment based on full-step velocities
-#ifdef CFA_PVRW
-      if ( !doPosVelRewind )
-#endif
+// #ifdef CFA_PVRW
+//     if ( !doPosVelRewind )
+// #endif
       if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
         reassignVelocities(timestep,step);
         addForceToMomentum(-0.5*timestep);
@@ -427,9 +428,9 @@ void Sequencer::integrate(int scriptTask) {
         rattle1(-timestep,0);
       }
 
-#ifdef CFA_PVRW
-      if ( ! doPosVelRewind )
-#endif
+// #ifdef CFA_PVRW
+//     if ( ! doPosVelRewind )
+// #endif
       if ( ! commOnly ) {
         langevinVelocitiesBBK1(timestep);
         addForceToMomentum(timestep);
@@ -443,30 +444,25 @@ void Sequencer::integrate(int scriptTask) {
       }
 
       // add drag to each atom's positions
-#ifdef CFA_PVRW
-      if ( !doPosVelRewind )
-#endif
+// #ifdef CFA_PVRW
+//     if ( !doPosVelRewind )
+// #endif
       if ( ! commOnly && movDragOn ) addMovDragToPosition(timestep);
-#ifdef CFA_PVRW
-      if ( !doPosVelRewind )
-#endif
+// #ifdef CFA_PVRW
+//       if ( !doPosVelRewind )
+// #endif
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
-#ifdef CFA_PVRW
-      if (doPosVelRewind){
-        pressureProfileReduction = NULL;
-      }
-#endif
-      rattle1(timestep,1);
-      if (doTcl || doColvars)  // include constraint forces
-        computeGlobal->saveTotalForces(patch);
+    rattle1(timestep,1);
+    if (doTcl || doColvars)  // include constraint forces
+      computeGlobal->saveTotalForces(patch);
 
-      submitHalfstep(step);
-      if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
+    submitHalfstep(step);
+    if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
-#ifdef CFA_PVRW
-      if ( !doPosVelRewind )
-#endif
+// #ifdef CFA_PVRW
+//     if ( !doPosVelRewind )
+// #endif
       if ( ! commOnly ) {
         addForceToMomentum(-0.5*timestep);
         if (staleForces || doNonbonded)
@@ -475,67 +471,64 @@ void Sequencer::integrate(int scriptTask) {
           addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,1);
       }
 
-	// rattle2(timestep,step);
-  // fprintf(stdout,"PVRW: submitreductions %i\n",step);fflush(stdout);
-	submitReductions(step);
-	submitCollections(step);
-  //Update adaptive tempering temperature
-  adaptTempUpdate(step);
+  	// rattle2(timestep,step);
+    // fprintf(stdout,"PVRW: submitreductions %i\n",step);fflush(stdout);
+  	submitReductions(step);
+  	submitCollections(step);
+    //Update adaptive tempering temperature
+    adaptTempUpdate(step);
 
 #if CYCLE_BARRIER
-        cycleBarrier(!((step+1) % stepsPerCycle), step);
+    cycleBarrier(!((step+1) % stepsPerCycle), step);
 #elif PME_BARRIER
-        cycleBarrier(doFullElectrostatics, step);
+    cycleBarrier(doFullElectrostatics, step);
 #elif  STEP_BARRIER
-        cycleBarrier(1, step);
+    cycleBarrier(1, step);
 #endif
 
-	 if(Node::Object()->specialTracing || simParams->statsOn){
-		 int bstep = simParams->traceStartStep;
-		 int estep = bstep + simParams->numTraceSteps;
-		 if(step == bstep || step == estep){
-			 traceBarrier(step);
-		 }
-	 }
+	  if(Node::Object()->specialTracing || simParams->statsOn){
+		  int bstep = simParams->traceStartStep;
+		  int estep = bstep + simParams->numTraceSteps;
+		  if(step == bstep || step == estep){
+		 	 traceBarrier(step);
+		  }
+	  }
 
 #ifdef MEASURE_NAMD_WITH_PAPI
-	 if(simParams->papiMeasure) {
-		 int bstep = simParams->papiMeasureStartStep;
-		 int estep = bstep + simParams->numPapiMeasureSteps;
-		 if(step == bstep || step==estep) {
-			 papiMeasureBarrier(step);
-		 }
-	 }
+  	if(simParams->papiMeasure) {
+  	  int bstep = simParams->papiMeasureStartStep;
+  	  int estep = bstep + simParams->numPapiMeasureSteps;
+  	  if(step == bstep || step==estep) {
+  		  papiMeasureBarrier(step);
+  	  }
+  	}
 #endif
 
-        if(traceIsOn()){
-            traceUserEvent(eventEndOfTimeStep);
-            sprintf(traceNote, "%s%d",tracePrefix,step);
-            traceUserSuppliedNote(traceNote);
-        }
-	rebalanceLoad(step);
+    if(traceIsOn()){
+        traceUserEvent(eventEndOfTimeStep);
+        sprintf(traceNote, "%s%d",tracePrefix,step);
+        traceUserSuppliedNote(traceNote);
+    }
+  	rebalanceLoad(step);
 
 #if PME_BARRIER
-	// a step before PME
-        cycleBarrier(dofull && !((step+1)%fullElectFrequency),step);
+	  // a step before PME
+    cycleBarrier(dofull && !((step+1)%fullElectFrequency),step);
 #endif
 
 #if USE_HPM
-        if(step == START_HPM_STEP)
-          (CProxy_Node(CkpvAccess(BOCclass_group).node)).startHPM();
+    if(step == START_HPM_STEP)
+      (CProxy_Node(CkpvAccess(BOCclass_group).node)).startHPM();
 
-        if(step == STOP_HPM_STEP)
-          (CProxy_Node(CkpvAccess(BOCclass_group).node)).stopHPM();
+    if(step == STOP_HPM_STEP)
+      (CProxy_Node(CkpvAccess(BOCclass_group).node)).stopHPM();
 #endif
 #ifdef CFA_PVRW
-      if (doPosVelRewind){
-        pressureProfileReduction = pressureProfileReductionBackup;
-      }
-      if (doTcl) {
-         doPosVelRewind = broadcast->doPVRW.get(step);
-      }
-#endif
+    if (doTcl) {
+       doPosVelRewind = broadcast->doPVRW.get(step);
     }
+#endif
+  } // ENDFOR
 }
 
 // add moving drag to each atom's position
