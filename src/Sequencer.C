@@ -415,9 +415,9 @@ void Sequencer::integrate(int scriptTask) {
     }
 
       // reassignment based on full-step velocities
-// #ifdef CFA_PVRW
-//     if ( !doPosVelRewind )
-// #endif
+#ifdef CFA_PVRW
+    if ( !doPosVelRewind )
+#endif
       if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
         reassignVelocities(timestep,step);
         addForceToMomentum(-0.5*timestep);
@@ -428,9 +428,9 @@ void Sequencer::integrate(int scriptTask) {
         rattle1(-timestep,0);
       }
 
-// #ifdef CFA_PVRW
-//     if ( ! doPosVelRewind )
-// #endif
+#ifdef CFA_PVRW
+    if ( ! doPosVelRewind )
+#endif
       if ( ! commOnly ) {
         langevinVelocitiesBBK1(timestep);
         addForceToMomentum(timestep);
@@ -460,9 +460,9 @@ void Sequencer::integrate(int scriptTask) {
     submitHalfstep(step);
     if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
-// #ifdef CFA_PVRW
-//     if ( !doPosVelRewind )
-// #endif
+#ifdef CFA_PVRW
+    if ( !doPosVelRewind )
+#endif
       if ( ! commOnly ) {
         addForceToMomentum(-0.5*timestep);
         if (staleForces || doNonbonded)
