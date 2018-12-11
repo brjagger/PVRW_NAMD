@@ -56,7 +56,7 @@ Sequencer::Sequencer(HomePatch *p) :
     if (simParams->pressureProfileOn) {
       int ntypes = simParams->pressureProfileAtomTypes;
       int nslabs = simParams->pressureProfileSlabs;
-      pressureProfileReduction = 
+      pressureProfileReduction =
         ReductionMgr::Object()->willSubmit(
 		REDUCTIONS_PPROF_INTERNAL, 3*nslabs*ntypes);
     } else {
@@ -228,7 +228,7 @@ void Sequencer::integrate(int scriptTask) {
         adaptTempT = simParams->langevinTemp;
     else if (simParams->rescaleFreq > 0)
         adaptTempT = simParams->rescaleTemp;
-        
+
 
     int &doMolly = patch->flags.doMolly;
     doMolly = simParams->mollyOn && doFullElectrostatics;
@@ -244,7 +244,7 @@ void Sequencer::integrate(int scriptTask) {
     doLCPO = simParams->LCPOOn;
 
     int zeroMomentum = simParams->zeroMomentum;
-    
+
     // Do we need to return forces to TCL script or Colvar module?
     int doTcl = simParams->tclForcesOn;
 	int doColvars = simParams->colvarsOn;
@@ -281,7 +281,7 @@ void Sequencer::integrate(int scriptTask) {
     //Update energy every timestep for adaptive tempering
     if ( adaptTempOn ) doEnergy=1;
     runComputeObjects(1,step<numberOfSteps); // must migrate here!
-    rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD 
+    rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD
     adaptTempUpdate(step); // update adaptive tempering temperature
 
     if ( staleForces || doTcl || doColvars ) {
@@ -320,7 +320,7 @@ void Sequencer::integrate(int scriptTask) {
     submitReductions(step);
     if(traceIsOn()){
         traceUserEvent(eventEndOfTimeStep);
-        sprintf(traceNote, "%s%d",tracePrefix,step); 
+        sprintf(traceNote, "%s%d",tracePrefix,step);
         traceUserSuppliedNote(traceNote);
     }
     rebalanceLoad(step);
@@ -333,6 +333,10 @@ void Sequencer::integrate(int scriptTask) {
       //      fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
       if (!doPosVelRewind) {
         saveOldPosVel();
+      }
+      else{
+        restoreOldPosVel();
+      }
 #endif
       rescaleVelocities(step);
       tcoupleVelocities(timestep,step);
@@ -393,36 +397,22 @@ void Sequencer::integrate(int scriptTask) {
       // Migrate Atoms on stepsPerCycle
       doEnergy = ! ( step % energyFrequency );
       if ( accelMDOn && !accelMDdihe ) doEnergy=1;
-      if ( adaptTempOn ) doEnergy=1; 
+      if ( adaptTempOn ) doEnergy=1;
 
 #ifdef CFA_PVRW
-      } else {
-	//	fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
-	    restoreOldPosVel();
-      }
       runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
 #else
       runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
 #endif
 
-#ifdef CFA_PVRW
-      int poop = 0;
-      if (doTcl) {
-	       poop = broadcast->doPVRW.get(step);
-      }
-#endif
-
       rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD
-     
+
       if ( staleForces || doTcl || doColvars ) {
         if ( doNonbonded ) saveForce(Results::nbond);
         if ( doFullElectrostatics ) saveForce(Results::slow);
       }
 
       // reassignment based on full-step velocities
-#ifdef CFA_PVRW
-      if ( !doPosVelRewind )
-#endif
       if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
         reassignVelocities(timestep,step);
         addForceToMomentum(-0.5*timestep);
@@ -433,9 +423,6 @@ void Sequencer::integrate(int scriptTask) {
         rattle1(-timestep,0);
       }
 
-#ifdef CFA_PVRW
-      if ( ! doPosVelRewind )
-#endif
       if ( ! commOnly ) {
         langevinVelocitiesBBK1(timestep);
         addForceToMomentum(timestep);
@@ -449,25 +436,16 @@ void Sequencer::integrate(int scriptTask) {
       }
 
       // add drag to each atom's positions
-#ifdef CFA_PVRW
-      if ( !doPosVelRewind )
-#endif
       if ( ! commOnly && movDragOn ) addMovDragToPosition(timestep);
-#ifdef CFA_PVRW
-      if ( !doPosVelRewind )
-#endif 
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
       rattle1(timestep,1);
       if (doTcl || doColvars)  // include constraint forces
         computeGlobal->saveTotalForces(patch);
-      
+
       submitHalfstep(step);
       if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
- 
-#ifdef CFA_PVRW
-      if ( !doPosVelRewind )
-#endif
+
       if ( ! commOnly ) {
         addForceToMomentum(-0.5*timestep);
         if (staleForces || doNonbonded)
@@ -480,8 +458,8 @@ void Sequencer::integrate(int scriptTask) {
 
 	submitReductions(step);
 	submitCollections(step);
-    //Update adaptive tempering temperature
-    adaptTempUpdate(step);
+  //Update adaptive tempering temperature
+  adaptTempUpdate(step);
 
 #if CYCLE_BARRIER
         cycleBarrier(!((step+1) % stepsPerCycle), step);
@@ -496,10 +474,10 @@ void Sequencer::integrate(int scriptTask) {
 		 int estep = bstep + simParams->numTraceSteps;
 		 if(step == bstep || step == estep){
 			 traceBarrier(step);
-		 }			 
+		 }
 	 }
 
-#ifdef MEASURE_NAMD_WITH_PAPI	 
+#ifdef MEASURE_NAMD_WITH_PAPI
 	 if(simParams->papiMeasure) {
 		 int bstep = simParams->papiMeasureStartStep;
 		 int estep = bstep + simParams->numPapiMeasureSteps;
@@ -508,10 +486,10 @@ void Sequencer::integrate(int scriptTask) {
 		 }
 	 }
 #endif
-	  
+
         if(traceIsOn()){
             traceUserEvent(eventEndOfTimeStep);
-            sprintf(traceNote, "%s%d",tracePrefix,step); 
+            sprintf(traceNote, "%s%d",tracePrefix,step);
             traceUserSuppliedNote(traceNote);
         }
 	rebalanceLoad(step);
@@ -528,7 +506,11 @@ void Sequencer::integrate(int scriptTask) {
         if(step == STOP_HPM_STEP)
           (CProxy_Node(CkpvAccess(BOCclass_group).node)).stopHPM();
 #endif
-    doPosVelRewind = poop;
+#ifdef CFA_PVRW
+      if (doTcl) {
+         doPosVelRewind = broadcast->doPVRW.get(step);
+      }
+#endif
     }
 }
 
@@ -543,7 +525,7 @@ void Sequencer::addMovDragToPosition(BigReal timestep) {
   for ( int i = 0; i < numAtoms; ++i )
   {
     // skip if fixed atom or zero drag attribute
-    if ( (simParams->fixedAtomsOn && atom[i].atomFixed) 
+    if ( (simParams->fixedAtomsOn && atom[i].atomFixed)
 	 || !(molecule->is_atom_movdragged(atom[i].id)) ) continue;
     molecule->get_movdrag_params(movDragVel, atom[i].id);
     dragIncrement = movDragGlobVel * movDragVel * dt;
@@ -564,7 +546,7 @@ void Sequencer::addRotDragToPosition(BigReal timestep) {
   for ( int i = 0; i < numAtoms; ++i )
   {
     // skip if fixed atom or zero drag attribute
-    if ( (simParams->fixedAtomsOn && atom[i].atomFixed) 
+    if ( (simParams->fixedAtomsOn && atom[i].atomFixed)
 	 || !(molecule->is_atom_rotdragged(atom[i].id)) ) continue;
     molecule->get_rotdrag_params(rotDragVel, rotDragAxis, rotDragPivot, atom[i].id);
     dAngle = rotDragGlobVel * rotDragVel * dt;
@@ -862,7 +844,7 @@ void Sequencer::langevinVelocities(BigReal dt_fs)
     for ( int i = 0; i < numAtoms; ++i )
     {
       BigReal f1 = exp( -1. * dt * a[i].langevinParam );
-      BigReal f2 = sqrt( ( 1. - f1*f1 ) * kbT * 
+      BigReal f2 = sqrt( ( 1. - f1*f1 ) * kbT *
                          ( a[i].partition ? tempFactor : 1.0 ) / a[i].mass );
 
       a[i].velocity *= f1;
@@ -940,7 +922,7 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
 
 void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
 {
-  if ( simParams->langevinOn && !simParams->langevin_useBAOAB ) 
+  if ( simParams->langevinOn && !simParams->langevin_useBAOAB )
   {
     rattle1(dt_fs,1);  // conserve momentum if gammas differ
 
@@ -999,7 +981,7 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
 
           i++;  // +1 from loop, we've updated both particles
         }
-        else { 
+        else {
           BigReal dt_gamma = dt * a[i].langevinParam;
           if ( ! dt_gamma ) continue;
 
@@ -1202,7 +1184,7 @@ void Sequencer::rescaleaccelMD (int step, int doNonbonded, int doFullElectrostat
    if (simParams->accelMDdihe && factor_dihe < 1) {
         for (int i = 0; i < numAtoms; ++i)
           if (patch->f[Results::amdf][i][0] || patch->f[Results::amdf][i][1] || patch->f[Results::amdf][i][2])
-              patch->f[Results::normal][i] += patch->f[Results::amdf][i]*(factor_dihe - 1);         
+              patch->f[Results::normal][i] += patch->f[Results::amdf][i]*(factor_dihe - 1);
    }
 
    if ( !simParams->accelMDdihe && factor_tot < 1) {
@@ -1230,7 +1212,7 @@ void Sequencer::adaptTempUpdate(int step)
 {
    //check if adaptive tempering is enabled and in the right timestep range
    if (!simParams->adaptTempOn) return;
-   if ( (step < simParams->adaptTempFirstStep ) || 
+   if ( (step < simParams->adaptTempFirstStep ) ||
      ( simParams->adaptTempLastStep > 0 && step > simParams->adaptTempLastStep )) {
         if (simParams->langevinOn) // restore langevin temperature
             adaptTempT = simParams->langevinTemp;
@@ -1416,7 +1398,7 @@ void Sequencer::rattle1(BigReal dt, int pressure)
     Tensor virial;
     Tensor *vp = ( pressure ? &virial : 0 );
     if ( patch->rattle1(dt, vp, pressureProfileReduction) ) {
-      iout << iERROR << 
+      iout << iERROR <<
         "Constraint failure; simulation has become unstable.\n" << endi;
       Node::Object()->enableEarlyExit();
       terminate();
@@ -1472,7 +1454,7 @@ void Sequencer::maximumMove(BigReal timestep)
             << patch->patchID << " pe " << CkMyPe() << ")\n" << endi;
         }
       }
-      iout << iERROR << 
+      iout << iERROR <<
         "Atoms moving too fast; simulation has become unstable ("
         << killme << " atoms on patch " << patch->patchID
         << " pe " << CkMyPe() << ").\n" << endi;
@@ -1531,7 +1513,7 @@ void Sequencer::submitHalfstep(int step)
     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,virial);
 #endif
   }
- 
+
   if (pressureProfileReduction) {
     int nslabs = simParams->pressureProfileSlabs;
     const Lattice &lattice = patch->lattice;
@@ -1583,7 +1565,7 @@ void Sequencer::submitHalfstep(int step)
         pressureProfileReduction->item(ppoffset+2) += wzz;
       }
     }
-  } 
+  }
 
   {
     BigReal intKineticEnergy = 0;
@@ -1707,7 +1689,7 @@ void Sequencer::submitReductions(int step)
     kineticEnergy *= 0.5;
     reduction->item(REDUCTION_CENTERED_KINETIC_ENERGY) += kineticEnergy;
     ADD_VECTOR_OBJECT(reduction,REDUCTION_MOMENTUM,momentum);
-    ADD_VECTOR_OBJECT(reduction,REDUCTION_ANGULAR_MOMENTUM,angularMomentum);  
+    ADD_VECTOR_OBJECT(reduction,REDUCTION_ANGULAR_MOMENTUM,angularMomentum);
   }
 
 #ifdef ALTVIRIAL
@@ -1817,7 +1799,7 @@ void Sequencer::submitReductions(int step)
         x_cm += a[j].mass * a[j].position;
       }
       x_cm /= m_cm;
-      
+
       BigReal z = a[i].position.z;
       int slab = (int)floor((z-zmin)*idz);
       if (slab < 0) slab += nslabs;
@@ -2150,7 +2132,7 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
         patch->f[Results::normal][i].x +
         patch->f[Results::nbond][i].x +
         patch->f[Results::slow][i].x,
-        patch->f[Results::normal][i].y + 
+        patch->f[Results::normal][i].y +
         patch->f[Results::nbond][i].y +
         patch->f[Results::slow][i].y,
         patch->f[Results::normal][i].z +
