@@ -447,9 +447,15 @@ void Sequencer::integrate(int scriptTask) {
         computeGlobal->saveTotalForces(patch);
 
       submitHalfstep(step);
+#ifdef CFA_PVRW
+      }
+#endif
+
       if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
-
+#ifdef CFA_PVRW
+      if ( !doPosVelRewind ){
+#endif
       if ( ! commOnly ) {
         addForceToMomentum(-0.5*timestep);
         if (staleForces || doNonbonded)
