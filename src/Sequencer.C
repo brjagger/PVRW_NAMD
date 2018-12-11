@@ -399,6 +399,7 @@ void Sequencer::integrate(int scriptTask) {
     } else {
 		  // fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
 	    restoreOldPosVel();
+      submitHalfstep(step);
       doFullElectrostatics = 1;
       doNonbonded = 1;
     }
@@ -429,7 +430,7 @@ void Sequencer::integrate(int scriptTask) {
       }
 
 
-// This one is causing massive jump in total energy
+// This one is causing massive jump in total energy +100
 #ifdef CFA_PVRW
     if ( ! doPosVelRewind )
 #endif
@@ -462,9 +463,10 @@ void Sequencer::integrate(int scriptTask) {
     submitHalfstep(step);
     if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
-// #ifdef CFA_PVRW
-//     if ( !doPosVelRewind )
-// #endif
+// This one is causing massive jump in total energy +50
+#ifdef CFA_PVRW
+    if ( !doPosVelRewind )
+#endif
       if ( ! commOnly ) {
         addForceToMomentum(-0.5*timestep);
         if (staleForces || doNonbonded)
