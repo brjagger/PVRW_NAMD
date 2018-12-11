@@ -338,6 +338,7 @@ void Sequencer::integrate(int scriptTask) {
         restoreOldPosVel();
         doPosVelRewind = 0;
         submitHalfstep(step);
+        runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
         submitHalfstep(step);
         submitReductions(step);
         submitCollections(step);
