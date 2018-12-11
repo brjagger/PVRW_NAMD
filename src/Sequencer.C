@@ -336,6 +336,7 @@ void Sequencer::integrate(int scriptTask) {
       }
       else{
         restoreOldPosVel();
+        continue
       }
 #endif
       rescaleVelocities(step);
