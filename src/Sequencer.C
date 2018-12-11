@@ -330,7 +330,7 @@ void Sequencer::integrate(int scriptTask) {
     for ( ++step; step <= numberOfSteps; ++step )
     {
 #ifdef CFA_PVRW
-      //      fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
+      // fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
       if (!doPosVelRewind) {
         saveOldPosVel();
 #endif
@@ -400,7 +400,7 @@ void Sequencer::integrate(int scriptTask) {
 	//	fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
 	    restoreOldPosVel();
       }
-      runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
+      // runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
 #else
       runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
 #endif
