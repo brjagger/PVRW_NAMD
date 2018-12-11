@@ -247,7 +247,7 @@ void Sequencer::integrate(int scriptTask) {
 
     // Do we need to return forces to TCL script or Colvar module?
     int doTcl = simParams->tclForcesOn;
-	int doColvars = simParams->colvarsOn;
+	  int doColvars = simParams->colvarsOn;
     ComputeGlobal *computeGlobal = Node::Object()->computeMgr->computeGlobalObject;
 
     // Bother to calculate energies?
@@ -331,21 +331,9 @@ void Sequencer::integrate(int scriptTask) {
     {
 #ifdef CFA_PVRW
            // fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
-      if (!doPosVelRewind) {
-        saveOldPosVel();
-      }
-      else{
-        restoreOldPosVel();
-        doPosVelRewind = 0;
-        submitHalfstep(step);
-        runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
-        submitHalfstep(step);
-        if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
-        submitReductions(step);
-        submitCollections(step);
-        rebalanceLoad(step);
-        continue;
-      }
+      // if (!doPosVelRewind) {
+      saveOldPosVel();
+      // }
 #endif
       rescaleVelocities(step);
       tcoupleVelocities(timestep,step);
@@ -375,7 +363,6 @@ void Sequencer::integrate(int scriptTask) {
 
       // We add an Ornstein-Uhlenbeck integration step for the case of BAOAB (Langevin)
       if ( simParams->langevinOn && simParams->langevin_useBAOAB ) langevinVelocities(timestep);
-
       langevinPiston(step);
 
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
@@ -408,11 +395,11 @@ void Sequencer::integrate(int scriptTask) {
       if ( accelMDOn && !accelMDdihe ) doEnergy=1;
       if ( adaptTempOn ) doEnergy=1;
 
-#ifdef CFA_PVRW
-      runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
-#else
+// #ifdef CFA_PVRW
+//       runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
+// #else
       runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
-#endif
+// #endif
 
       rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD
 
@@ -518,7 +505,9 @@ void Sequencer::integrate(int scriptTask) {
 
 #ifdef CFA_PVRW
       if (doTcl) {
-         doPosVelRewind = broadcast->doPVRW.get(step);
+        if(broadcast->doPVRW.get(step)){
+          restoreOldPosVel();
+        }
       }
 #endif
     }
