@@ -371,15 +371,21 @@ void Sequencer::integrate(int scriptTask) {
       hardWallDrude(timestep, 1);
 
       minimizationQuenchVelocity();
-
       doNonbonded = !(step%nonbondedFrequency);
       doFullElectrostatics = (dofull && !(step%fullElectFrequency));
 
       if ( zeroMomentum && doFullElectrostatics )
         correctMomentum(step,slowstep);
 
+#ifdef CFA_PVRW
+        }
+#endif
+
       submitHalfstep(step);
 
+#ifdef CFA_PVRW
+      if (!doPosVelRewind) {
+#endif
       doMolly = simParams->mollyOn && doFullElectrostatics;
       // BEGIN LA
       doLoweAndersen = simParams->loweAndersenOn && doNonbonded;
