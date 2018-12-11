@@ -379,6 +379,9 @@ void Sequencer::integrate(int scriptTask) {
 
 #ifdef CFA_PVRW
         }
+        else{
+          restoreOldPosVel();
+        }
 #endif
 
       submitHalfstep(step);
@@ -402,9 +405,6 @@ void Sequencer::integrate(int scriptTask) {
       if ( adaptTempOn ) doEnergy=1;
 
 #ifdef CFA_PVRW
-      } else {
-	//	fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
-	    restoreOldPosVel();
       }
       runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
 #else
