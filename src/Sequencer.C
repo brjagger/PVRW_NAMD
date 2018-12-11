@@ -342,7 +342,7 @@ void Sequencer::integrate(int scriptTask) {
         submitReductions(step);
         submitCollections(step);
         rebalanceLoad(step);
-        continue
+        continue;
       }
 #endif
       rescaleVelocities(step);
