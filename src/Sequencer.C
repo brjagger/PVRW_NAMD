@@ -399,6 +399,9 @@ void Sequencer::integrate(int scriptTask) {
       } else {
 	//	fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
 	    restoreOldPosVel();
+      saveForce(Results::nbond);
+      saveForce(Results::slow);
+      doEnergy = 1;
       }
       runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
 #else
