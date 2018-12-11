@@ -330,7 +330,7 @@ void Sequencer::integrate(int scriptTask) {
     for ( ++step; step <= numberOfSteps; ++step )
     {
 #ifdef CFA_PVRW
-      fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
+      // fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
       if (!doPosVelRewind) {
         saveOldPosVel();
 #endif
@@ -397,11 +397,8 @@ void Sequencer::integrate(int scriptTask) {
 
 #ifdef CFA_PVRW
       } else {
-		  fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
+		  // fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
 	    restoreOldPosVel();
-      saveForce(Results::nbond);
-      saveForce(Results::slow);
-      doEnergy = 1;
       }
       runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
 #else
@@ -477,7 +474,7 @@ void Sequencer::integrate(int scriptTask) {
       }
 
 	// rattle2(timestep,step);
-  fprintf(stdout,"PVRW: submitreductions %i\n",step);fflush(stdout);
+  // fprintf(stdout,"PVRW: submitreductions %i\n",step);fflush(stdout);
 	submitReductions(step);
 	submitCollections(step);
     //Update adaptive tempering temperature
