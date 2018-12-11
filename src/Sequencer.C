@@ -336,6 +336,12 @@ void Sequencer::integrate(int scriptTask) {
       }
       else{
         restoreOldPosVel();
+        doPosVelRewind = 0;
+        submitHalfstep(step);
+        submitHalfstep(step);
+        submitReductions(step);
+        submitCollections(step);
+        rebalanceLoad(step);
         continue
       }
 #endif
@@ -507,6 +513,7 @@ void Sequencer::integrate(int scriptTask) {
         if(step == STOP_HPM_STEP)
           (CProxy_Node(CkpvAccess(BOCclass_group).node)).stopHPM();
 #endif
+
 #ifdef CFA_PVRW
       if (doTcl) {
          doPosVelRewind = broadcast->doPVRW.get(step);
