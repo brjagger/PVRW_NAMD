@@ -330,7 +330,7 @@ void Sequencer::integrate(int scriptTask) {
     for ( ++step; step <= numberOfSteps; ++step )
     {
 #ifdef CFA_PVRW
-      fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
+      //      fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
       if (!doPosVelRewind) {
         saveOldPosVel();
 #endif
@@ -397,7 +397,7 @@ void Sequencer::integrate(int scriptTask) {
 
 #ifdef CFA_PVRW
       } else {
-	    fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
+	//	fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
 	    restoreOldPosVel();
       }
       runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
@@ -451,9 +451,13 @@ void Sequencer::integrate(int scriptTask) {
 #endif
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
-      rattle1(timestep,1);
-      if (doTcl || doColvars)  // include constraint forces
-        computeGlobal->saveTotalForces(patch);
+#ifdef CFA_PVRW
+      if( !doPosVelRewind){
+        rattle1(timestep,1);
+      }
+#endif
+        if (doTcl || doColvars)  // include constraint forces
+          computeGlobal->saveTotalForces(patch);
 
       submitHalfstep(step);
       if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
@@ -521,7 +525,6 @@ void Sequencer::integrate(int scriptTask) {
         if(step == STOP_HPM_STEP)
           (CProxy_Node(CkpvAccess(BOCclass_group).node)).stopHPM();
 #endif
-
 #ifdef CFA_PVRW
       if (doTcl) {
          doPosVelRewind = broadcast->doPVRW.get(step);
