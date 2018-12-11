@@ -451,7 +451,14 @@ void Sequencer::integrate(int scriptTask) {
 #endif
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
-      rattle1(timestep,1);
+#ifdef CFA_PVRW
+      if( !doPosVelRewind){
+        rattle1(timestep,1);
+      }
+      // else{
+      //   rattle1(timestep,0);
+      // }
+#endif
       if (doTcl || doColvars)  // include constraint forces
         computeGlobal->saveTotalForces(patch);
 
