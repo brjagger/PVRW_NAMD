@@ -451,13 +451,9 @@ void Sequencer::integrate(int scriptTask) {
 #endif
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
-#ifdef CFA_PVRW
-      if( !doPosVelRewind){
-        rattle1(timestep,1);
-      }
-#endif
-        if (doTcl || doColvars)  // include constraint forces
-          computeGlobal->saveTotalForces(patch);
+      rattle1(timestep,1);
+      if (doTcl || doColvars)  // include constraint forces
+        computeGlobal->saveTotalForces(patch);
 
       submitHalfstep(step);
       if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
@@ -477,8 +473,8 @@ void Sequencer::integrate(int scriptTask) {
   // fprintf(stdout,"PVRW: submitreductions %i\n",step);fflush(stdout);
 	submitReductions(step);
 	submitCollections(step);
-    //Update adaptive tempering temperature
-    adaptTempUpdate(step);
+  //Update adaptive tempering temperature
+  adaptTempUpdate(step);
 
 #if CYCLE_BARRIER
         cycleBarrier(!((step+1) % stepsPerCycle), step);
