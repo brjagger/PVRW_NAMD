@@ -428,9 +428,9 @@ void Sequencer::integrate(int scriptTask) {
         rattle1(-timestep,0);
       }
 
-#ifdef CFA_PVRW
-    if ( ! doPosVelRewind )
-#endif
+// #ifdef CFA_PVRW
+//     if ( ! doPosVelRewind )
+// #endif
       if ( ! commOnly ) {
         langevinVelocitiesBBK1(timestep);
         addForceToMomentum(timestep);
