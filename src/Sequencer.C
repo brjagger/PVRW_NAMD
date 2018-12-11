@@ -333,6 +333,10 @@ void Sequencer::integrate(int scriptTask) {
     // fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
     if (!doPosVelRewind) {
       saveOldPosVel();
+    } else {
+      // fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
+      restoreOldPosVel();
+    }
 #endif
       rescaleVelocities(step);
       tcoupleVelocities(timestep,step);
@@ -396,13 +400,6 @@ void Sequencer::integrate(int scriptTask) {
       if ( adaptTempOn ) doEnergy=1;
 
 #ifdef CFA_PVRW
-    } else {
-		  // fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
-	    restoreOldPosVel();
-      submitHalfstep(step);
-      doFullElectrostatics = 1;
-      doNonbonded = 1;
-    }
     runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
 #else
     runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
@@ -431,9 +428,9 @@ void Sequencer::integrate(int scriptTask) {
 
 
 // This one is causing massive jump in total energy +100
-// #ifdef CFA_PVRW
-//     if ( ! doPosVelRewind )
-// #endif
+#ifdef CFA_PVRW
+    if ( ! doPosVelRewind )
+#endif
       if ( ! commOnly ) {
         langevinVelocitiesBBK1(timestep);
         addForceToMomentum(timestep);
@@ -447,13 +444,13 @@ void Sequencer::integrate(int scriptTask) {
       }
 
       // add drag to each atom's positions
-// #ifdef CFA_PVRW
-//     if ( !doPosVelRewind )
-// #endif
+#ifdef CFA_PVRW
+    if ( !doPosVelRewind )
+#endif
       if ( ! commOnly && movDragOn ) addMovDragToPosition(timestep);
-// #ifdef CFA_PVRW
-//       if ( !doPosVelRewind )
-// #endif
+#ifdef CFA_PVRW
+      if ( !doPosVelRewind )
+#endif
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
     rattle1(timestep,1);
