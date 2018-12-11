@@ -8,7 +8,7 @@
 #define DEBUG_H
 
 #ifndef MIN_DEBUG_LEVEL
-  #define MIN_DEBUG_LEVEL 0
+  #define MIN_DEBUG_LEVEL 4
 #endif
 #ifndef MAX_DEBUG_LEVEL
   #define MAX_DEBUG_LEVEL 10
@@ -101,18 +101,18 @@ public:
         va_start(argList, msg);
         vfprintf(fp, msg, argList);
         va_end(argList);
-    }   
-    inline int openTrace(){ 
+    }
+    inline int openTrace(){
         if(fname==NULL)  return 0;
-        fp = fopen(fname, "a"); 
+        fp = fopen(fname, "a");
         if(fp==NULL)
             return 1;
         else
             return 0;
     }
-    inline int closeTrace(){ 
+    inline int closeTrace(){
         if(fname==NULL)  return 0;
-        return fclose(fp); 
+        return fclose(fp);
     }
     inline int flushTrace(){
         return fflush(fp);

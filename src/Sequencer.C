@@ -330,9 +330,6 @@ void Sequencer::integrate(int scriptTask) {
     for ( ++step; step <= numberOfSteps; ++step )
     {
 #ifdef CFA_PVRW
-      if (doTcl) {
-         doPosVelRewind = broadcast->doPVRW.get(step);
-      }
       //      fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
       if (!doPosVelRewind) {
         saveOldPosVel();
@@ -448,12 +445,11 @@ void Sequencer::integrate(int scriptTask) {
       rattle1(timestep,1);
       if (doTcl || doColvars)  // include constraint forces
         computeGlobal->saveTotalForces(patch);
-
-      submitHalfstep(step);
 #ifdef CFA_PVRW
       }
 #endif
 
+      submitHalfstep(step);
       if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
 #ifdef CFA_PVRW
@@ -520,6 +516,12 @@ void Sequencer::integrate(int scriptTask) {
 
         if(step == STOP_HPM_STEP)
           (CProxy_Node(CkpvAccess(BOCclass_group).node)).stopHPM();
+#endif
+
+#ifdef CFA_PVRW
+      if (doTcl) {
+         doPosVelRewind = broadcast->doPVRW.get(step);
+      }
 #endif
     }
 }
