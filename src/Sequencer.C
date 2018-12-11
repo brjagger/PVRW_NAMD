@@ -400,7 +400,7 @@ void Sequencer::integrate(int scriptTask) {
 	//	fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
 	    restoreOldPosVel();
       }
-      // runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
+      runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
 #else
       runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
 #endif
