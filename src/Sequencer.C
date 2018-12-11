@@ -260,6 +260,7 @@ void Sequencer::integrate(int scriptTask) {
     // declare the flag for checking for request to rewind velocities/positions
     // assume it is 0
     int doPosVelRewind = 0;
+    SubmitReduction *pressureProfileReductionBackup = pressureProfileReduction;
 #endif
 
   if ( scriptTask == SCRIPT_RUN ) {
@@ -452,13 +453,11 @@ void Sequencer::integrate(int scriptTask) {
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
 #ifdef CFA_PVRW
-      if( !doPosVelRewind){
-        rattle1(timestep,1);
-      }
-      else{
-        rattle1(timestep,0);
+      if (doPosVelRewind){
+        pressureProfileReduction = NULL;
       }
 #endif
+      rattle1(timestep,1);
       if (doTcl || doColvars)  // include constraint forces
         computeGlobal->saveTotalForces(patch);
 
@@ -529,6 +528,9 @@ void Sequencer::integrate(int scriptTask) {
           (CProxy_Node(CkpvAccess(BOCclass_group).node)).stopHPM();
 #endif
 #ifdef CFA_PVRW
+      if (doPosVelRewind){
+        pressureProfileReduction = pressureProfileReductionBackup;
+      }
       if (doTcl) {
          doPosVelRewind = broadcast->doPVRW.get(step);
       }
