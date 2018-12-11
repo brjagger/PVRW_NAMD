@@ -431,9 +431,9 @@ void Sequencer::integrate(int scriptTask) {
 
 
 // This one is causing massive jump in total energy +100
-#ifdef CFA_PVRW
-    if ( ! doPosVelRewind )
-#endif
+// #ifdef CFA_PVRW
+//     if ( ! doPosVelRewind )
+// #endif
       if ( ! commOnly ) {
         langevinVelocitiesBBK1(timestep);
         addForceToMomentum(timestep);
