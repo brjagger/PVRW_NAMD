@@ -330,7 +330,7 @@ void Sequencer::integrate(int scriptTask) {
     for ( ++step; step <= numberOfSteps; ++step )
     {
 #ifdef CFA_PVRW
-      //      fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
+           // fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
       if (!doPosVelRewind) {
         saveOldPosVel();
       }
@@ -340,6 +340,7 @@ void Sequencer::integrate(int scriptTask) {
         submitHalfstep(step);
         runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
         submitHalfstep(step);
+        if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
         submitReductions(step);
         submitCollections(step);
         rebalanceLoad(step);
