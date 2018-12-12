@@ -331,13 +331,9 @@ void Sequencer::integrate(int scriptTask) {
   {
 #ifdef CFA_PVRW
     // fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
-    if (!doPosVelRewind) {
+    // if (!doPosVelRewind) {
       saveOldPosVel();
-    } else {
-      // fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
-      restoreOldPosVel();
-      doPosVelRewind = 0;
-    }
+    // } 
 #endif
       rescaleVelocities(step);
       tcoupleVelocities(timestep,step);
@@ -414,9 +410,9 @@ void Sequencer::integrate(int scriptTask) {
     }
 
       // reassignment based on full-step velocities
-#ifdef CFA_PVRW
-    if ( !doPosVelRewind )
-#endif
+// #ifdef CFA_PVRW
+//     if ( !doPosVelRewind )
+// #endif
       if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
         reassignVelocities(timestep,step);
         addForceToMomentum(-0.5*timestep);
@@ -429,9 +425,9 @@ void Sequencer::integrate(int scriptTask) {
 
 
 // This one is causing massive jump in total energy +100
-#ifdef CFA_PVRW
-    if ( ! doPosVelRewind )
-#endif
+// #ifdef CFA_PVRW
+//     if ( ! doPosVelRewind )
+// #endif
       if ( ! commOnly ) {
         langevinVelocitiesBBK1(timestep);
         addForceToMomentum(timestep);
@@ -445,13 +441,13 @@ void Sequencer::integrate(int scriptTask) {
       }
 
       // add drag to each atom's positions
-#ifdef CFA_PVRW
-    if ( !doPosVelRewind )
-#endif
+// #ifdef CFA_PVRW
+//     if ( !doPosVelRewind )
+// #endif
       if ( ! commOnly && movDragOn ) addMovDragToPosition(timestep);
-#ifdef CFA_PVRW
-      if ( !doPosVelRewind )
-#endif
+// #ifdef CFA_PVRW
+//       if ( !doPosVelRewind )
+// #endif
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
     rattle1(timestep,1);
@@ -462,9 +458,9 @@ void Sequencer::integrate(int scriptTask) {
     if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
 // This one is causing massive jump in total energy +50
-#ifdef CFA_PVRW
-    if ( !doPosVelRewind )
-#endif
+// #ifdef CFA_PVRW
+//     if ( !doPosVelRewind )
+// #endif
       if ( ! commOnly ) {
         addForceToMomentum(-0.5*timestep);
         if (staleForces || doNonbonded)
@@ -479,6 +475,18 @@ void Sequencer::integrate(int scriptTask) {
   	submitCollections(step);
     //Update adaptive tempering temperature
     adaptTempUpdate(step);
+
+#ifdef CFA_PVRW
+    if (doTcl) {
+       doPosVelRewind = broadcast->doPVRW.get(step);
+    }
+    if (doPosVelRewind) {
+      // fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
+      restoreOldPosVel();
+      doFullElectrostatics = 1;
+      doNonbonded  = 1;
+    }
+#endif
 
 #if CYCLE_BARRIER
     cycleBarrier(!((step+1) % stepsPerCycle), step);
@@ -524,11 +532,6 @@ void Sequencer::integrate(int scriptTask) {
 
     if(step == STOP_HPM_STEP)
       (CProxy_Node(CkpvAccess(BOCclass_group).node)).stopHPM();
-#endif
-#ifdef CFA_PVRW
-    if (doTcl) {
-       doPosVelRewind = broadcast->doPVRW.get(step);
-    }
 #endif
   } // ENDFOR
 }
