@@ -404,10 +404,7 @@ void Sequencer::integrate(int scriptTask) {
 #else
     runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
 #endif
-// Not from CAM
-#ifdef CFA_PVRW
-    if ( !doPosVelRewind ){
-#endif
+
     rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD
 
     if ( staleForces || doTcl || doColvars ) {
@@ -416,9 +413,9 @@ void Sequencer::integrate(int scriptTask) {
     }
 
       // reassignment based on full-step velocities
-// #ifdef CFA_PVRW
-//     if ( !doPosVelRewind )
-// #endif
+#ifdef CFA_PVRW
+    if ( !doPosVelRewind )
+#endif
       if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
         reassignVelocities(timestep,step);
         addForceToMomentum(-0.5*timestep);
@@ -431,9 +428,9 @@ void Sequencer::integrate(int scriptTask) {
 
 
 // This one is causing massive jump in total energy +100
-// #ifdef CFA_PVRW
-//     if ( ! doPosVelRewind )
-// #endif
+#ifdef CFA_PVRW
+    if ( ! doPosVelRewind )
+#endif
       if ( ! commOnly ) {
         langevinVelocitiesBBK1(timestep);
         addForceToMomentum(timestep);
@@ -456,6 +453,9 @@ void Sequencer::integrate(int scriptTask) {
 // #endif
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
+#ifdef CFA_PVRW
+    if ( !doPosVelRewind )
+#endif
     rattle1(timestep,1);
     if (doTcl || doColvars)  // include constraint forces
       computeGlobal->saveTotalForces(patch);
@@ -464,9 +464,9 @@ void Sequencer::integrate(int scriptTask) {
     if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
 // This one is causing massive jump in total energy +50
-// #ifdef CFA_PVRW
-//     if ( !doPosVelRewind )
-// #endif
+#ifdef CFA_PVRW
+    if ( !doPosVelRewind )
+#endif
       if ( ! commOnly ) {
         addForceToMomentum(-0.5*timestep);
         if (staleForces || doNonbonded)
@@ -477,8 +477,12 @@ void Sequencer::integrate(int scriptTask) {
 
   	// rattle2(timestep,step);
     // fprintf(stdout,"PVRW: submitreductions %i\n",step);fflush(stdout);
+#ifdef CFA_PVRW
+    if ( !doPosVelRewind )
+#endif
   	submitReductions(step);
-  	submitCollections(step);
+  	
+    submitCollections(step);
     //Update adaptive tempering temperature
     adaptTempUpdate(step);
 
@@ -530,10 +534,6 @@ void Sequencer::integrate(int scriptTask) {
 #ifdef CFA_PVRW
     if (doTcl) {
        doPosVelRewind = broadcast->doPVRW.get(step);
-    }
-    }
-    else{
-      doPosVelRewind = 0;
     }
 #endif
   } // ENDFOR
