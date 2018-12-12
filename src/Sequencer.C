@@ -416,6 +416,14 @@ void Sequencer::integrate(int scriptTask) {
       if ( doFullElectrostatics ) saveForce(Results::slow);
     }
 
+#ifdef CFA_PVRW
+    if (doPosVelRewind){
+      addForceToMomentum(0);
+      addForceToMomentum(0,Results::nbond);
+      addForceToMomentum(0,Results::slow);
+    }
+#endif
+
       // reassignment based on full-step velocities
 #ifdef CFA_PVRW
     if ( !doPosVelRewind )
@@ -453,21 +461,16 @@ void Sequencer::integrate(int scriptTask) {
 #endif
       if ( ! commOnly && movDragOn ) addMovDragToPosition(timestep);
 #ifdef CFA_PVRW
-      if ( !doPosVelRewind )
+    if ( !doPosVelRewind )
 #endif
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
-#ifdef CFA_PVRW
-    if ( !doPosVelRewind ){
-#endif
+
     rattle1(timestep,1);
     if (doTcl || doColvars)  // include constraint forces
       computeGlobal->saveTotalForces(patch);
-
     submitHalfstep(step);
-#ifdef CFA_PVRW
-  }
-#endif
+
 
     if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
