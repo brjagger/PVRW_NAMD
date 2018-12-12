@@ -338,6 +338,7 @@ void Sequencer::integrate(int scriptTask) {
       tcoupleVelocities(timestep,step);
       berendsenPressure(step);
 
+      // B
       if ( ! commOnly ) {
         addForceToMomentum(0.5*timestep);
         if (staleForces || doNonbonded)
@@ -357,14 +358,17 @@ void Sequencer::integrate(int scriptTask) {
          rattle1(timestep,0);
          } */
 
+      // A
       maximumMove(timestep);
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
 
+      // O
       // We add an Ornstein-Uhlenbeck integration step for the case of BAOAB (Langevin)
       if ( simParams->langevinOn && simParams->langevin_useBAOAB ) langevinVelocities(timestep);
 
       langevinPiston(step);
 
+      // A
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
 
       // impose hard wall potential for Drude bond length
@@ -426,7 +430,7 @@ void Sequencer::integrate(int scriptTask) {
         rattle1(-timestep,0);
       }
 
-
+      // B
 // This one is causing massive jump in total energy +100
 #ifdef CFA_PVRW
     if ( ! doPosVelRewind )
@@ -454,15 +458,20 @@ void Sequencer::integrate(int scriptTask) {
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
 #ifdef CFA_PVRW
-    if ( !doPosVelRewind )
+    if ( !doPosVelRewind ){
 #endif
     rattle1(timestep,1);
     if (doTcl || doColvars)  // include constraint forces
       computeGlobal->saveTotalForces(patch);
 
     submitHalfstep(step);
+#ifdef CFA_PVRW
+  }
+#endif
+
     if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
+    // B2 part 2?
 // This one is causing massive jump in total energy +50
 #ifdef CFA_PVRW
     if ( !doPosVelRewind )
@@ -1384,12 +1393,9 @@ void Sequencer::restoreOldPosVel ( void )
   int numAtoms = patch->numAtoms;
 
   for(int i = 0; i < numAtoms; ++i ){
-    // a[i].velocity.x = -a[i].velocityOld.x;
-    // a[i].velocity.y = -a[i].velocityOld.y;
-    // a[i].velocity.z = -a[i].velocityOld.z;
-    a[i].velocity.x = a[i].velocityOld.x;
-    a[i].velocity.y = a[i].velocityOld.y;
-    a[i].velocity.z = a[i].velocityOld.z;
+    a[i].velocity.x = -a[i].velocityOld.x;
+    a[i].velocity.y = -a[i].velocityOld.y;
+    a[i].velocity.z = -a[i].velocityOld.z;
     a[i].position.x = a[i].positionOld.x;
     a[i].position.y = a[i].positionOld.y;
     a[i].position.z = a[i].positionOld.z;
