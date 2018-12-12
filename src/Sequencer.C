@@ -476,12 +476,7 @@ void Sequencer::integrate(int scriptTask) {
       }
 
   	// rattle2(timestep,step);
-    // fprintf(stdout,"PVRW: submitreductions %i\n",step);fflush(stdout);
-#ifdef CFA_PVRW
-    if ( !doPosVelRewind )
-#endif
   	submitReductions(step);
-  	
     submitCollections(step);
     //Update adaptive tempering temperature
     adaptTempUpdate(step);
