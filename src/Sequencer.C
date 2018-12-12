@@ -331,9 +331,8 @@ void Sequencer::integrate(int scriptTask) {
   {
 #ifdef CFA_PVRW
     // fprintf(stdout,"PVRW: begin step %i with state %i\n",step,doPosVelRewind);fflush(stdout);
-    // if (!doPosVelRewind) {
+    if (!doPosVelRewind) {
       saveOldPosVel();
-    // } 
 #endif
       rescaleVelocities(step);
       tcoupleVelocities(timestep,step);
@@ -397,11 +396,18 @@ void Sequencer::integrate(int scriptTask) {
       if ( adaptTempOn ) doEnergy=1;
 
 #ifdef CFA_PVRW
+    } else {
+		  // fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
+	    restoreOldPosVel();
+    }
     runComputeObjects(doPosVelRewind || !(step%stepsPerCycle),step<numberOfSteps);
 #else
     runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
 #endif
-
+// Not from CAM
+#ifdef CFA_PVRW
+    if ( !doPosVelRewind ){
+#endif
     rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD
 
     if ( staleForces || doTcl || doColvars ) {
@@ -476,18 +482,6 @@ void Sequencer::integrate(int scriptTask) {
     //Update adaptive tempering temperature
     adaptTempUpdate(step);
 
-#ifdef CFA_PVRW
-    if (doTcl) {
-       doPosVelRewind = broadcast->doPVRW.get(step);
-    }
-    if (doPosVelRewind) {
-      // fprintf(stdout,"PVRW: restoring\n");fflush(stdout);
-      restoreOldPosVel();
-      doFullElectrostatics = 1;
-      doNonbonded  = 1;
-    }
-#endif
-
 #if CYCLE_BARRIER
     cycleBarrier(!((step+1) % stepsPerCycle), step);
 #elif PME_BARRIER
@@ -532,6 +526,13 @@ void Sequencer::integrate(int scriptTask) {
 
     if(step == STOP_HPM_STEP)
       (CProxy_Node(CkpvAccess(BOCclass_group).node)).stopHPM();
+#endif
+#ifdef CFA_PVRW
+    }
+    
+    if (doTcl) {
+       doPosVelRewind = broadcast->doPVRW.get(step);
+    }
 #endif
   } // ENDFOR
 }
