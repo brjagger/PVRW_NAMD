@@ -444,13 +444,13 @@ void Sequencer::integrate(int scriptTask) {
       }
 
       // add drag to each atom's positions
-// #ifdef CFA_PVRW
-//     if ( !doPosVelRewind )
-// #endif
+#ifdef CFA_PVRW
+    if ( !doPosVelRewind )
+#endif
       if ( ! commOnly && movDragOn ) addMovDragToPosition(timestep);
-// #ifdef CFA_PVRW
-//       if ( !doPosVelRewind )
-// #endif
+#ifdef CFA_PVRW
+      if ( !doPosVelRewind )
+#endif
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
 #ifdef CFA_PVRW
@@ -1384,9 +1384,12 @@ void Sequencer::restoreOldPosVel ( void )
   int numAtoms = patch->numAtoms;
 
   for(int i = 0; i < numAtoms; ++i ){
-    a[i].velocity.x = -a[i].velocityOld.x;
-    a[i].velocity.y = -a[i].velocityOld.y;
-    a[i].velocity.z = -a[i].velocityOld.z;
+    // a[i].velocity.x = -a[i].velocityOld.x;
+    // a[i].velocity.y = -a[i].velocityOld.y;
+    // a[i].velocity.z = -a[i].velocityOld.z;
+    a[i].velocity.x = a[i].velocityOld.x;
+    a[i].velocity.y = a[i].velocityOld.y;
+    a[i].velocity.z = a[i].velocityOld.z;
     a[i].position.x = a[i].positionOld.x;
     a[i].position.y = a[i].positionOld.y;
     a[i].position.z = a[i].positionOld.z;
