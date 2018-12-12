@@ -528,10 +528,12 @@ void Sequencer::integrate(int scriptTask) {
       (CProxy_Node(CkpvAccess(BOCclass_group).node)).stopHPM();
 #endif
 #ifdef CFA_PVRW
-    }
-    
     if (doTcl) {
        doPosVelRewind = broadcast->doPVRW.get(step);
+    }
+    }
+    else{
+      doPosVelRewind = 0;
     }
 #endif
   } // ENDFOR
