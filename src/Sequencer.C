@@ -247,7 +247,7 @@ void Sequencer::integrate(int scriptTask) {
 
     // Do we need to return forces to TCL script or Colvar module?
     int doTcl = simParams->tclForcesOn;
-	int doColvars = simParams->colvarsOn;
+	  int doColvars = simParams->colvarsOn;
     ComputeGlobal *computeGlobal = Node::Object()->computeMgr->computeGlobalObject;
 
     // Bother to calculate energies?
@@ -489,13 +489,6 @@ void Sequencer::integrate(int scriptTask) {
 
   	// rattle2(timestep,step);
   	submitReductions(step);
-#ifdef CFA_PVRW
-    if(doPosVelRewind){
-      submitReductions(step);
-      submitReductions(step);
-      submitReductions(step);
-    }
-#endif
     submitCollections(step);
     //Update adaptive tempering temperature
     adaptTempUpdate(step);
