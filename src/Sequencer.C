@@ -418,15 +418,59 @@ void Sequencer::integrate(int scriptTask) {
 
 #ifdef CFA_PVRW
     if (doPosVelRewind){
-      addForceToMomentum(0);
-      addForceToMomentum(0,Results::nbond);
-      addForceToMomentum(0,Results::slow);
+      
+      rattle1(0.,0);  // enforce rigid bond constraints on initial positions
+  
+  
+      if ( staleForces || doTcl || doColvars ) {
+        if ( doNonbonded ) saveForce(Results::nbond);
+        if ( doFullElectrostatics ) saveForce(Results::slow);
+      }
+      if ( ! commOnly ) {
+        addForceToMomentum(-0.5*timestep);
+        if (staleForces || doNonbonded)
+  		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,0);
+        if (staleForces || doFullElectrostatics)
+  		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces);
+      }
+      minimizationQuenchVelocity();
+      rattle1(-timestep,0);
+      submitHalfstep(step);
+      if ( ! commOnly ) {
+        addForceToMomentum(timestep);
+        if (staleForces || doNonbonded)
+  		addForceToMomentum(nbondstep,Results::nbond,staleForces,0);
+        if (staleForces || doFullElectrostatics)
+  		addForceToMomentum(slowstep,Results::slow,staleForces,0);
+      }
+      rattle1(timestep,1);
+      if (doTcl || doColvars)  // include constraint forces
+        computeGlobal->saveTotalForces(patch);
+      submitHalfstep(step);
+      if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
+      if ( ! commOnly ) {
+        addForceToMomentum(-0.5*timestep);
+        if (staleForces || doNonbonded)
+  		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,1);
+        if (staleForces || doFullElectrostatics)
+  		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,1);
+      }
+      submitReductions(step);
+      if(traceIsOn()){
+          traceUserEvent(eventEndOfTimeStep);
+          sprintf(traceNote, "%s%d",tracePrefix,step);
+          traceUserSuppliedNote(traceNote);
+      }
+      rebalanceLoad(step);
+     // addForceToMomentum(0);
+     // addForceToMomentum(0,Results::nbond);
+     // addForceToMomentum(0,Results::slow);
     }
 #endif
 
       // reassignment based on full-step velocities
 #ifdef CFA_PVRW
-    if ( !doPosVelRewind )
+    else {  
 #endif
       if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
         reassignVelocities(timestep,step);
@@ -440,9 +484,6 @@ void Sequencer::integrate(int scriptTask) {
 
       // B
 // This one is causing massive jump in total energy +100
-#ifdef CFA_PVRW
-    if ( ! doPosVelRewind )
-#endif
       if ( ! commOnly ) {
         langevinVelocitiesBBK1(timestep);
         addForceToMomentum(timestep);
@@ -456,13 +497,7 @@ void Sequencer::integrate(int scriptTask) {
       }
 
       // add drag to each atom's positions
-#ifdef CFA_PVRW
-    if ( !doPosVelRewind )
-#endif
       if ( ! commOnly && movDragOn ) addMovDragToPosition(timestep);
-#ifdef CFA_PVRW
-    if ( !doPosVelRewind )
-#endif
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
 
@@ -474,11 +509,9 @@ void Sequencer::integrate(int scriptTask) {
 
     if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
+    
     // B2 part 2?
 // This one is causing massive jump in total energy +50
-#ifdef CFA_PVRW
-    if ( !doPosVelRewind )
-#endif
       if ( ! commOnly ) {
         addForceToMomentum(-0.5*timestep);
         if (staleForces || doNonbonded)
@@ -493,6 +526,9 @@ void Sequencer::integrate(int scriptTask) {
     //Update adaptive tempering temperature
     adaptTempUpdate(step);
 
+#ifdef CFA_PVRW
+   }
+#endif 
 #if CYCLE_BARRIER
     cycleBarrier(!((step+1) % stepsPerCycle), step);
 #elif PME_BARRIER
@@ -539,9 +575,13 @@ void Sequencer::integrate(int scriptTask) {
       (CProxy_Node(CkpvAccess(BOCclass_group).node)).stopHPM();
 #endif
 #ifdef CFA_PVRW
+    if (doPosVelRewind) {
+      doPosVelRewind = 0;
+    } else {
     if (doTcl) {
        doPosVelRewind = broadcast->doPVRW.get(step);
     }
+}
 #endif
   } // ENDFOR
 }
